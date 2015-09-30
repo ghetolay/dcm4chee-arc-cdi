@@ -179,6 +179,9 @@ public class QCBeanImpl implements QCBean {
     
     @Inject
     private Hooks<StudyProtectionHook> studyProtectionHooks;
+    
+    @Inject
+    private AfterQCWorkflowExecutor wfManager;
 
     @PersistenceContext(name="dcm4chee-arc")
     private EntityManager em;
@@ -778,6 +781,9 @@ public class QCBeanImpl implements QCBean {
         rejectAndScheduleForDeletion(rejectedInstances, qcRejectionCode);
         changeRequester.scheduleChangeRequest(eventUIDs, null, rejNote);
         study.setRejected(true);
+        
+        wfManager.aggregateQCWorkflowState(deleteEvent);
+        
         return deleteEvent;
     }
 
