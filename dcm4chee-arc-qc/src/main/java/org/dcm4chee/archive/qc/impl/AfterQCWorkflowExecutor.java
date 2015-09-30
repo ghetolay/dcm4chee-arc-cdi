@@ -45,11 +45,11 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.dcm4chee.archive.dto.QCEventInstance;
 import org.dcm4chee.archive.qc.QCEvent;
@@ -71,6 +71,9 @@ public class AfterQCWorkflowExecutor {
     
     @Resource(lookup="java:jboss/TransactionManager")
     private TransactionManager tmManager; 
+    
+    @Resource(lookup="java:jboss/TransactionSynchronizationRegistry")
+    private TransactionSynchronizationRegistry tsRegistry;
     
     /**
      * Aggregates the result state of a QC operation to the current QC workflow.
@@ -100,12 +103,12 @@ public class AfterQCWorkflowExecutor {
 
             QCWorkflow wf = qcWorkflows.get();
             if (wf == null) {
-                tx.registerSynchronization(new OnWorkflowCommitRunner());
+                tsRegistry.registerInterposedSynchronization(new OnWorkflowCommitRunner());
                 wf = new QCWorkflow();
                 qcWorkflows.set(wf);
             }
             return wf;
-        } catch (SystemException | RollbackException ex) {
+        } catch (SystemException e) {
             throw new RuntimeException("Could not register transaction synchronizer for QC workflow");
         } 
     }
@@ -114,7 +117,7 @@ public class AfterQCWorkflowExecutor {
      * Contains arbitrary logic to be executed at the end of a QC workflow.
      * @param wf
      */
-    protected void runAtEndOfQCWorkflow(QCWorkflow wf) {
+    protected void runAtEndOfSuccessfulQCWorkflow(QCWorkflow wf) {
         System.out.println("Instances affected by QC workflow: " + wf.getAffectedInstances());
 //        throw new RuntimeException("Fail the transaction");
     }
@@ -142,12 +145,11 @@ public class AfterQCWorkflowExecutor {
         public void beforeCompletion() {
             QCWorkflow wf = qcWorkflows.get();
             if (wf != null) {
-                Transaction tx = getTransaction();
                 try {
-                    runAtEndOfQCWorkflow(wf);
+                    runAtEndOfSuccessfulQCWorkflow(wf);
                 } catch(Exception e) {
                     LOGGER.error("Error while executing after QC workflows", e);
-                    markTransactionAsRollback(tx);
+                    markTransactionAsRollback(getTransaction());
                 }
             }
         }
