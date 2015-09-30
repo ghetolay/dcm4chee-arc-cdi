@@ -64,8 +64,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 @ApplicationScoped
-public class AfterQCWorkflowExecutor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AfterQCWorkflowExecutor.class);
+public class PostQCWorkflowExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostQCWorkflowExecutor.class);
     
     private static final ThreadLocal<QCWorkflow> qcWorkflows = new ThreadLocal<QCWorkflow>();
     
@@ -117,7 +117,7 @@ public class AfterQCWorkflowExecutor {
      * Contains arbitrary logic to be executed at the end of a QC workflow.
      * @param wf
      */
-    protected void runAtEndOfSuccessfulQCWorkflow(QCWorkflow wf) {
+    protected void runPostQCLogic(QCWorkflow wf) {
         System.out.println("Instances affected by QC workflow: " + wf.getAffectedInstances());
 //        throw new RuntimeException("Fail the transaction");
     }
@@ -146,7 +146,7 @@ public class AfterQCWorkflowExecutor {
             QCWorkflow wf = qcWorkflows.get();
             if (wf != null) {
                 try {
-                    runAtEndOfSuccessfulQCWorkflow(wf);
+                    runPostQCLogic(wf);
                 } catch(Exception e) {
                     LOGGER.error("Error while executing after QC workflows", e);
                     markTransactionAsRollback(getTransaction());
