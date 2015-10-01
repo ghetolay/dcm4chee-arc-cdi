@@ -181,7 +181,7 @@ public class QCBeanImpl implements QCBean {
     private Hooks<StudyProtectionHook> studyProtectionHooks;
     
     @Inject
-    private AfterQCWorkflowExecutor wfManager;
+    private PostQCWorkflowExecutor wfManager;
 
     @PersistenceContext(name="dcm4chee-arc")
     private EntityManager em;
